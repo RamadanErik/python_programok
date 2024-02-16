@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 sys.path.append("C:\\Users\\KNL2022\\Documents\\Entangled souurce")
 from utils.common import connect, adjust_bin_width
-from utils.acquisitions import acquire_histograms,run_hist, save_histograms
+from utils.acquisitions import acquire_histograms, save_histograms
 from utils.plot import plot_histograms, filter_histogram_bins
 
 

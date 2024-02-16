@@ -17,11 +17,9 @@ elso = True
 def adatok(beutesek):
     global elso
     a = time.time()
-    if elso:
-        histograms = acquire_histograms(tc, duration, bin_width, bin_count, DEFAULT_HISTOGRAM)
-        elso = False
-    else:
-        histograms = run_hist(tc, duration, bin_width, bin_count, DEFAULT_HISTOGRAM)
+
+    histograms = acquire_histograms(tc, duration, bin_width, bin_count, DEFAULT_HISTOGRAM)
+
     b = time.time()
     print(b-a)
     for i, (hist_title, histogram) in enumerate(histograms.items()):

@@ -79,7 +79,7 @@ root.title("Koincidencia mérés")
 #getting screen width and height of display
 width= root.winfo_screenwidth() 
 height= root.winfo_screenheight()
-#setting tkinter window size
+#setting tkinter window sizea
 root.geometry("%dx%d" % (width, height))
 
 frame1=tb.Frame(root,bootstyle="light",height=600,width=50)

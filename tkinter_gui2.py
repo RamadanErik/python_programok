@@ -112,5 +112,6 @@ label1.pack(padx=20, pady=20)
 btn_start.pack(padx=20, pady=20)
 btn_stop.pack(padx=20, pady=20)
 
+
 # Futtatjuk a Tkinter event loop-ot
 root.mainloop()

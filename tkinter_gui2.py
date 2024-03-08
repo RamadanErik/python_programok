@@ -5,20 +5,20 @@ import time
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import re
+import threading
 
-#from forgato import *
-#from time_controller import *
+from forgato import *
+from time_controller import *
 
 #time_controller csatlakozás
-#tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRAMS = time_controller_csatlakozas()
+tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRAMS = time_controller_csatlakozas()
 #------
 
 
 #forgato csatlakozas
-s_no1="55290814"
+s_no1="55290504"
 s_no2="55290814"
-#device_1,device_2=forgato_csatlakozas(s_no1,s_no2)
-device_1,device_2=[0,0]
+device_1=forgato_csatlakozas(s_no1,s_no2)
 
 #-------------
 
@@ -62,23 +62,23 @@ class PlotUpdater:
     def generate(self):
 
         #Ha van tc
-        # histograms = acquire_histograms(
-        #     tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRAMS
-        # )
+        histograms = acquire_histograms(
+            tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRAMS
+        )
         #----------
 
         #Ha nincs tc
-        a1 = np.random.randint(2000, size=10)
-        a2 = np.random.randint(2000, size=10)
-        a3 = np.random.randint(2000, size=10)
-        a4 = np.random.randint(2000, size=10)
-
-        histograms = {
-            1: a1,
-            2: a2,
-            3: a3,
-            4: a4
-        }
+        # a1 = np.random.randint(2000, size=10)
+        # a2 = np.random.randint(2000, size=10)
+        # a3 = np.random.randint(2000, size=10)
+        # a4 = np.random.randint(2000, size=10)
+        #
+        # histograms = {
+        #     1: a1,
+        #     2: a2,
+        #     3: a3,
+        #     4: a4
+        # }
         #-----------
         return histograms
 
@@ -153,7 +153,7 @@ window = tk.Tk()
 window.title("Koincidencia mérés")
 window.configure(background=primary_color)
 
-window.rowconfigure(0,minsize=800,weight=1)
+window.rowconfigure(0,minsize=600,weight=1)
 window.columnconfigure(0,minsize=600,weight=1)
 window.columnconfigure(1,minsize=800,weight=1)
 
@@ -250,6 +250,8 @@ szog2=0
 forgato_szog1=tk.StringVar()
 forgato_szog2=tk.StringVar()
 
+
+
 def set_forgato1():
     global szog1
     try:
@@ -262,6 +264,9 @@ def set_forgato1():
         szog1=0
     forgato_ertek1.config(text=szog1)
     #beállítja a forgatót
+
+    x = threading.Thread(target=move_forgato(device_1,szog1))
+    x.start()
     #move_forgato(device_1,szog1)
 
 def set_forgato2():
@@ -276,7 +281,15 @@ def set_forgato2():
         szog2=0
     forgato_ertek2.config(text=szog2)
     #beállítja a forgatót
-    #move_forgato(device_2,szog2)
+    move_forgato(device_2,szog2)
+
+
+
+
+
+
+
+
 
 # def set_korbe_forgatas1():
 #     global szog1

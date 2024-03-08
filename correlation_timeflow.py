@@ -154,7 +154,7 @@ def main():
 
             ax.set_title(f'Integration time: {DEFAULT_ACQUISITION_DURATION} sec')
             ax.set_xticks(range(0, 20))
-            ax.set_ylim([0, 18000])
+            ax.set_ylim([0, 9000])
             ax.legend(legend_labels)
             fig.canvas.draw()
             fig.canvas.flush_events()

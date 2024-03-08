@@ -1,0 +1,7 @@
+BME source
+T = 41,3 °C-nál vannak leginkább azonos fázisban a koncindencia diagrammok
+6db attenuation
+
+WIGNER source
+T = 38,9 °C-nál vannak leginkább azonos fázisban a koncindencia diagrammok
+2db attenuation

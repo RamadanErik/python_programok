@@ -4,6 +4,25 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import re
+
+#from forgato import *
+#from time_controller import *
+
+#time_controller csatlakozás
+#tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRAMS = time_controller_csatlakozas()
+#------
+
+
+#forgato csatlakozas
+s_no1="55290814"
+s_no2="55290814"
+#device_1,device_2=forgato_csatlakozas(s_no1,s_no2)
+device_1,device_2=[0,0]
+
+#-------------
+
+
 
 # Define dark theme colors
 bg_color = '#1E1E1E'  # Dark gray
@@ -37,8 +56,18 @@ class PlotUpdater:
         self.plot_1_4 = tk.BooleanVar()
         self.plot_2_3 = tk.BooleanVar()
         self.plot_2_4 = tk.BooleanVar()
+        global device_1
+        global device_2
 
     def generate(self):
+
+        #Ha van tc
+        # histograms = acquire_histograms(
+        #     tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRAMS
+        # )
+        #----------
+
+        #Ha nincs tc
         a1 = np.random.randint(2000, size=10)
         a2 = np.random.randint(2000, size=10)
         a3 = np.random.randint(2000, size=10)
@@ -50,6 +79,7 @@ class PlotUpdater:
             3: a3,
             4: a4
         }
+        #-----------
         return histograms
 
     def adatok(self):
@@ -158,6 +188,7 @@ plot_updater = PlotUpdater(window, fig, ax, canvas)
 
 frame1=tk.Frame(tab1,relief=tk.GROOVE,bd=2,width=600)
 frame2=tk.Frame(tab1,relief=tk.GROOVE,bd=2, width=600)
+frame3=tk.Frame(tab1,relief=tk.GROOVE,bd=2, width=600)
 
 
 
@@ -170,16 +201,17 @@ label1.grid(row=0,column=0,sticky="news")
 btn_start.grid(row=0,column=1,sticky="news",padx=2)
 btn_stop.grid(row=0,column=2,sticky="news")
 
-frame1.grid(row=0,column=0,sticky="nws")
-frame2.grid(row=1,column=0,sticky="nws")
+frame1.grid(row=0,column=0,sticky="nws",pady=5)
+frame2.grid(row=1,column=0,sticky="nws",pady=5)
+frame3.grid(row=2,column=0,sticky="nws",pady=5)
 
 
-
+#Frame2--------
 # Checkboxok
-cb_1_3 = tk.Checkbutton(frame2, text='1-3', variable=plot_updater.plot_1_3, font=('Times New Roman', 15),onvalue=True, offvalue=False,width=7)
-cb_1_4 = tk.Checkbutton(frame2, text='1-4', variable=plot_updater.plot_1_4, font=('Times New Roman', 15), onvalue=True, offvalue=False,width=7)
-cb_2_3 = tk.Checkbutton(frame2, text='2-3', variable=plot_updater.plot_2_3, font=('Times New Roman', 15), onvalue=True, offvalue=False,width=7)
-cb_2_4 = tk.Checkbutton(frame2, text='2-4', variable=plot_updater.plot_2_4, font=('Times New Roman', 15), onvalue=True, offvalue=False,width=7)
+cb_1_3 = tk.Checkbutton(frame2, text='1-3', variable=plot_updater.plot_1_3, font=('Times New Roman', 15),onvalue=True, offvalue=False,width=4,cursor="hand2")
+cb_1_4 = tk.Checkbutton(frame2, text='1-4', variable=plot_updater.plot_1_4, font=('Times New Roman', 15), onvalue=True, offvalue=False,width=4,cursor="hand2")
+cb_2_3 = tk.Checkbutton(frame2, text='2-3', variable=plot_updater.plot_2_3, font=('Times New Roman', 15), onvalue=True, offvalue=False,width=4,cursor="hand2")
+cb_2_4 = tk.Checkbutton(frame2, text='2-4', variable=plot_updater.plot_2_4, font=('Times New Roman', 15), onvalue=True, offvalue=False,width=4,cursor="hand2")
 
 label2=tk.Label(frame2,text="Koincidenciák:",width=20,font=('Times New Roman', 15,'bold'), foreground="Black")
 
@@ -197,10 +229,10 @@ beutes_label4_dot=tk.Label(frame2, text="●", width=5, font=('Times New Roman',
 
 
 label2.grid(rowspan=3,column=0,sticky="news")
-cb_1_3.grid(row=0, column=1, sticky="news")
-cb_1_4.grid(row=0, column=2, sticky="news")
-cb_2_3.grid(row=0, column=3, sticky="news")
-cb_2_4.grid(row=0, column=4, sticky="news")
+cb_1_3.grid(row=0, column=1, sticky="news",padx=5)
+cb_1_4.grid(row=0, column=2, sticky="news",padx=5)
+cb_2_3.grid(row=0, column=3, sticky="news",padx=5)
+cb_2_4.grid(row=0, column=4, sticky="news",padx=5)
 
 beutes_label1.grid(row=1,column=1,sticky="news")
 beutes_label2.grid(row=1,column=2,sticky="news")
@@ -212,6 +244,101 @@ beutes_label2_dot.grid(row=2,column=2,sticky="news")
 beutes_label3_dot.grid(row=2,column=3,sticky="news")
 beutes_label4_dot.grid(row=2,column=4,sticky="news")
 
+#--------------------
+szog1=0
+szog2=0
+forgato_szog1=tk.StringVar()
+forgato_szog2=tk.StringVar()
+
+def set_forgato1():
+    global szog1
+    try:
+        x=re.split(',|\.',forgato_szog1.get())
+        if len(x)==1:
+            szog1=float(x[0])
+        else:
+            szog1=int(x[0])+int(x[1])/(10**len(x[1]))
+    except:
+        szog1=0
+    forgato_ertek1.config(text=szog1)
+    #beállítja a forgatót
+    #move_forgato(device_1,szog1)
+
+def set_forgato2():
+    global szog2
+    try:
+        x=re.split(',|\.',forgato_szog2.get())
+        if len(x)==1:
+            szog2=float(x[0])
+        else:
+            szog2=int(x[0])+int(x[1])/(10**len(x[1]))
+    except:
+        szog2=0
+    forgato_ertek2.config(text=szog2)
+    #beállítja a forgatót
+    #move_forgato(device_2,szog2)
+
+# def set_korbe_forgatas1():
+#     global szog1
+    
+#     szog1=0
+#     set_forgato1()
+
+#     szog1=180
+    
+#     forgato_ertek1.config(text=szog1)
+#     #beállítja a forgatót
+#     #move_forgato(device_1,szog1)
+
+# def set_korbe_forgatas2():
+#     global szog2
+    
+#     szog2=0
+#     set_forgato2()
+
+#     szog2=180
+    
+#     forgato_ertek2.config(text=szog1)
+#     #beállítja a forgatót
+#     #move_forgato(device_2,szog2)
+
+
+
+#Frame3
+label3=tk.Label(frame3,text="Forgató beállítás:",width=20,font=('Times New Roman', 15,'bold'), foreground="Black")
+
+forgato_cim1=tk.Label(frame3,text="1.",width=10,font=('Times New Roman', 15), foreground="Black")
+forgato_box1=tk.Entry(frame3,width=5,textvariable = forgato_szog1,font=('Times New Roman', 15), foreground="Black",justify='center')
+forgato_set1=tk.Button(frame3,width=5,text="Set",background=action_color, foreground=fg_color, command=set_forgato1,cursor="hand2")
+forgato_ertek1=tk.Label(frame3,width=10,text=szog1,font=('Times New Roman', 15), foreground="Black")
+forgato_forgatas1=tk.Button(frame3,width=5,text="Forgatás",background=action_color, foreground=fg_color,cursor="hand2")
+
+forgato_cim2=tk.Label(frame3,text="2.",width=10,font=('Times New Roman', 15), foreground="Black")
+forgato_box2=tk.Entry(frame3,width=5,textvariable = forgato_szog2,font=('Times New Roman', 15), foreground="Black",justify='center')
+forgato_set2=tk.Button(frame3,width=5,text="Set",background=action_color, foreground=fg_color, command=set_forgato2,cursor="hand2")
+forgato_ertek2=tk.Label(frame3,width=10,text=szog1,font=('Times New Roman', 15), foreground="Black")
+forgato_forgatas2=tk.Button(frame3,width=5,text="Forgatás",background=action_color, foreground=fg_color,cursor="hand2")
+
+
+
+
+label3.grid(rowspan=4,column=0,sticky="news")
+
+forgato_cim1.grid(row=0,column=1,columnspan=2,sticky="news")
+forgato_box1.grid(row=1,column=1,sticky="news")
+forgato_set1.grid(row=1,column=2,sticky="news")
+forgato_ertek1.grid(row=2,column=1,columnspan=2,sticky="news")
+forgato_forgatas1.grid(row=3,column=1,columnspan=2,sticky="news")
+
+forgato_cim2.grid(row=0,column=3,columnspan=2,sticky="news")
+forgato_box2.grid(row=1,column=3,sticky="news")
+forgato_set2.grid(row=1,column=4,sticky="news")
+forgato_ertek2.grid(row=2,column=3,columnspan=2,sticky="news")
+forgato_forgatas2.grid(row=3,column=3,columnspan=2,sticky="news")
+
+
+
+#-----------------------
 
 notebook.grid(row=0, column=0, sticky="news")
 plot_frame.grid(row=0, column=1, sticky="news")

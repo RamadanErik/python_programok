@@ -10,15 +10,21 @@ import threading
 from forgato import *
 from time_controller import *
 
+
 # time_controller csatlakozás
 tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRAMS = time_controller_csatlakozas()
 # ------
-
 
 # forgato csatlakozas
 s_no1 = "55290504"
 s_no2 = "55290814"
 device_1 = forgato_csatlakozas(s_no1, s_no2)
+device_2 = forgato_csatlakozas(s_no2, s_no1)
+
+
+
+
+
 
 # -------------
 
@@ -56,8 +62,8 @@ class PlotUpdater:
         self.plot_2_3 = tk.BooleanVar()
         self.plot_2_4 = tk.BooleanVar()
         self.thread = None
-        global device_1
-        global device_2
+        #global device_1
+        #global device_2
 
     def destroy(self):
         if self.thread is not None:
@@ -78,7 +84,7 @@ class PlotUpdater:
         # a2 = np.random.randint(2000, size=10)
         # a3 = np.random.randint(2000, size=10)
         # a4 = np.random.randint(2000, size=10)
-        #
+        
         # histograms = {
         #     1: a1,
         #     2: a2,
@@ -188,10 +194,16 @@ notebook = ttk.Notebook(window)
 
 tab1 = ttk.Frame(notebook)
 tab2 = ttk.Frame(notebook)
+tab3 = ttk.Frame(notebook)
+
 
 notebook.add(tab1, text="Plotolás")
 notebook.add(tab2, text="Polarizáció kontroller")
+notebook.add(tab3, text="Bell-mérés")
+
 notebook.grid(row=0, column=0, sticky="news")
+
+# Plotolás tab-->
 
 # plotolt diagramm beállítás-----------------------------
 fig, ax = plt.subplots(figsize=(8, 8))
@@ -211,9 +223,11 @@ plot_frame.plot_updater = PlotUpdater(window, fig, ax, canvas)
 frame1 = tk.Frame(tab1, relief=tk.GROOVE, bd=2, width=600)
 frame2 = tk.Frame(tab1, relief=tk.GROOVE, bd=2, width=600)
 frame3 = tk.Frame(tab1, relief=tk.GROOVE, bd=2, width=600)
+frame4 = tk.Frame(tab1, relief=tk.GROOVE, bd=2, width=600)
+
 
 # Start és Stop
-label1 = tk.Label(frame1, text="Plot:", width=20, height=5, font=('Times New Roman', 15, 'bold'), foreground="Black", )
+label1 = tk.Label(frame1, text="Plot:", width=20, height=5, font=('Times New Roman', 15, 'bold'), foreground="Black")
 btn_start = tk.Button(frame1, text="Start", background=action_color, width=15, height=5, foreground=fg_color,
                       command=plot_frame.plot_updater.start_plot, cursor="hand2")
 btn_stop = tk.Button(frame1, text="Stop", background=action_color, width=15, height=5, foreground=fg_color,
@@ -226,6 +240,9 @@ btn_stop.grid(row=0, column=2, sticky="news")
 frame1.grid(row=0, column=0, sticky="nws", pady=5)
 frame2.grid(row=1, column=0, sticky="nws", pady=5)
 frame3.grid(row=2, column=0, sticky="nws", pady=5)
+frame4.grid(row=3, column=0, sticky="nws", pady=5)
+
+
 
 # Frame2--------
 # Checkboxok
@@ -276,12 +293,16 @@ forgato_szog2 = tk.StringVar()
 
 def set_forgato1():
     global szog1
+    global forgatas1
+    global minimalizalas
+
     try:
-        x = re.split(',|\.', forgato_szog1.get())
-        if len(x) == 1:
-            szog1 = float(x[0])
-        else:
-            szog1 = int(x[0]) + int(x[1]) / (10 ** len(x[1]))
+        if not (forgatas1 or minimalizalas):
+            x = re.split(',|\.', forgato_szog1.get())
+            if len(x) == 1:
+                szog1 = float(x[0])
+            else:
+                szog1 = int(x[0]) + int(x[1]) / (10 ** len(x[1]))
     except:
         szog1 = 0
     forgato_ertek1.config(text=szog1)
@@ -289,47 +310,132 @@ def set_forgato1():
 
     x = threading.Thread(target=move_forgato, args=[device_1, szog1])
     x.start()
-    # move_forgato(device_1,szog1)
+    #move_forgato(device_1,szog1)
 
 
 def set_forgato2():
     global szog2
+    global forgatas2
+    global minimalizalas
+
+
     try:
-        x = re.split(',|\.', forgato_szog2.get())
-        if len(x) == 1:
-            szog2 = float(x[0])
-        else:
-            szog2 = int(x[0]) + int(x[1]) / (10 ** len(x[1]))
+        if not (forgatas2 or minimalizalas):
+            x = re.split(',|\.', forgato_szog2.get())
+            if len(x) == 1:
+                szog2 = float(x[0])
+            else:
+                szog2 = int(x[0]) + int(x[1]) / (10 ** len(x[1]))
     except:
         szog2 = 0
     forgato_ertek2.config(text=szog2)
     # beállítja a forgatót
-    move_forgato(device_2, szog2)
+
+    x = threading.Thread(target=move_forgato, args=[device_2, szog2])
+    x.start()
+    #move_forgato(device_2,szog2)
 
 
-# def set_korbe_forgatas1():
-#     global szog1
+forgatas1=False
+forgatas2=False
 
-#     szog1=0
-#     set_forgato1()
+minimalizalas=False
 
-#     szog1=180
+def set_korbe_forgatas1():
+    global szog1
+    global forgatas1
+    forgatas1 = not forgatas1
+    if forgatas1:
+        forgato_forgatas1.config(text="Megállítás")
+    else:
+        forgato_forgatas1.config(text="Forgatás")
+    while forgatas1:
+        set_forgato1()
+        time.sleep(1)
+        szog1+=10
 
-#     forgato_ertek1.config(text=szog1)
-#     #beállítja a forgatót
-#     #move_forgato(device_1,szog1)
+def set_korbe_forgatas2():
+    global szog2
+    global forgatas2
+    forgatas2 = not forgatas2
+    if forgatas2:
+        forgato_forgatas2.config(text="Megállítás")
+    else:
+        forgato_forgatas2.config(text="Forgatás")
+    while forgatas2:
+        set_forgato2()
+        time.sleep(1)
+        szog2+=10
 
-# def set_korbe_forgatas2():
-#     global szog2
 
-#     szog2=0
-#     set_forgato2()
+minimalizalando_value = tk.IntVar()  # Változó a kiválasztott minimalizálandó érték tárolására
 
-#     szog2=180
+    
+def minimum_kereses_forgato1():
+    global szog1
+    global forgatas1
+    global utolso
+    global minimalizalando_value
+    global minimalizalas
 
-#     forgato_ertek2.config(text=szog1)
-#     #beállítja a forgatót
-#     #move_forgato(device_2,szog2)
+
+
+    min_val=minimalizalando_value.get()
+    minimalizalas = True
+    minszog=szog1
+    minbeut=utolso[min_val-1]
+
+    forgato_minimalizalasa1.config(text="...")
+    fokonkent=5
+    k=int(180/fokonkent)    
+    for i in range(k):
+        szog1+=fokonkent
+        set_forgato1()
+        time.sleep(1)
+        beutes = utolso[min_val-1]
+        if( beutes < minbeut ):
+            minszog=szog1
+            minbeut=beutes
+    
+    szog1=minszog
+    set_forgato1()
+    time.sleep(1)
+    forgato_minimalizalasa1.config(text="Beállítás 1.")
+    minimalizalas = False
+
+    
+
+def minimum_kereses_forgato2():
+    global szog2
+    global forgatas2
+    global utolso
+    global minimalizalando_value
+    global minimalizalas
+
+    min_val=minimalizalando_value.get()
+    minimalizalas = True
+    minszog=szog2
+    minbeut=utolso[min_val-1]
+
+    forgato_minimalizalasa2.config(text="...")
+    fokonkent=5
+    k=int(180/fokonkent)    
+    for i in range(k):
+        szog2+=fokonkent
+        set_forgato2()
+        time.sleep(1)
+        beutes = utolso[min_val-1]
+        if( beutes < minbeut ):
+            minszog=szog2
+            minbeut=beutes
+    
+    szog2=minszog
+    set_forgato2()
+    time.sleep(1)
+    forgato_minimalizalasa2.config(text="Beállítás 2.")
+    minimalizalas = False
+
+
 
 
 # Frame3
@@ -341,7 +447,7 @@ forgato_box1 = tk.Entry(frame3, width=5, textvariable=forgato_szog1, font=('Time
 forgato_set1 = tk.Button(frame3, width=5, text="Set", background=action_color, foreground=fg_color,
                          command=set_forgato1, cursor="hand2")
 forgato_ertek1 = tk.Label(frame3, width=10, text=szog1, font=('Times New Roman', 15), foreground="Black")
-forgato_forgatas1 = tk.Button(frame3, width=5, text="Forgatás", background=action_color, foreground=fg_color,
+forgato_forgatas1 = tk.Button(frame3, width=5, text="Forgatás", background=action_color, foreground=fg_color,command=lambda: threading.Thread(target=set_korbe_forgatas1).start(),
                               cursor="hand2")
 
 forgato_cim2 = tk.Label(frame3, text="2.", width=10, font=('Times New Roman', 15), foreground="Black")
@@ -350,7 +456,7 @@ forgato_box2 = tk.Entry(frame3, width=5, textvariable=forgato_szog2, font=('Time
 forgato_set2 = tk.Button(frame3, width=5, text="Set", background=action_color, foreground=fg_color,
                          command=set_forgato2, cursor="hand2")
 forgato_ertek2 = tk.Label(frame3, width=10, text=szog1, font=('Times New Roman', 15), foreground="Black")
-forgato_forgatas2 = tk.Button(frame3, width=5, text="Forgatás", background=action_color, foreground=fg_color,
+forgato_forgatas2 = tk.Button(frame3, width=5, text="Forgatás", background=action_color, foreground=fg_color,command=lambda: threading.Thread(target=set_korbe_forgatas2).start(),
                               cursor="hand2")
 
 label3.grid(rowspan=4, column=0, sticky="news")
@@ -368,6 +474,76 @@ forgato_ertek2.grid(row=2, column=3, columnspan=2, sticky="news")
 forgato_forgatas2.grid(row=3, column=3, columnspan=2, sticky="news")
 
 # -----------------------
+
+
+
+
+# Frame 4
+
+
+# Rádiógombok létrehozása
+rb_1 = tk.Radiobutton(frame4, text='1', variable=minimalizalando_value, value=1, font=('Times New Roman', 15), cursor="hand2")
+rb_2 = tk.Radiobutton(frame4, text='2', variable=minimalizalando_value, value=2, font=('Times New Roman', 15), cursor="hand2")
+rb_3 = tk.Radiobutton(frame4, text='3', variable=minimalizalando_value, value=3, font=('Times New Roman', 15), cursor="hand2")
+rb_4 = tk.Radiobutton(frame4, text='4', variable=minimalizalando_value, value=4, font=('Times New Roman', 15), cursor="hand2")
+
+label4 = tk.Label(frame4, text="Minimumba beállítás:", width=20, font=('Times New Roman', 15, 'bold'), foreground="Black")
+
+forgato_minimalizalasa1 = tk.Button(frame4, width=5, text="Beállítás 1.", background=action_color, foreground=fg_color,command=lambda: threading.Thread(target=minimum_kereses_forgato1).start(),
+                              cursor="hand2")
+forgato_minimalizalasa2 = tk.Button(frame4, width=5, text="Beállítás 2.", background=action_color, foreground=fg_color,command=lambda: threading.Thread(target=minimum_kereses_forgato2).start(),
+                              cursor="hand2")
+
+
+label4.grid(rowspan=2, column=0, sticky="news")
+# Rádiógombok elhelyezése a frame-en
+rb_1.grid(row=0, column=1)
+rb_2.grid(row=0, column=2)
+rb_3.grid(row=0, column=3)
+rb_4.grid(row=0, column=4)
+
+forgato_minimalizalasa1.grid(row=2, column=1, columnspan=2, sticky="news")
+forgato_minimalizalasa2.grid(row=2, column=3, columnspan=2, sticky="news")
+
+
+# Alapértelmezett érték beállítása
+minimalizalando_value.set(1)  # Alapértelmezettként a 1-es minimalizálandó van kiválasztva
+
+
+
+
+#------------------------------------------
+
+# Polarizáció kontroller tab -->
+
+def polarizacio_kontroller_beallitas():
+    return
+
+
+pol_kontr=[0,0,0]
+
+p_frame1 = tk.Frame(tab2, relief=tk.GROOVE, bd=2, width=600)
+
+p_frame1.grid(row=0, column=0, sticky="nws", pady=5)
+
+p_label1 = tk.Label(p_frame1, text="Polarizáció kontroller", width=20, height=5, font=('Times New Roman', 15, 'bold'), foreground="Black")
+p_pol_label1 = tk.Label(p_frame1, text=pol_kontr[0], width=5, font=('Times New Roman', 15), foreground="Black")
+p_pol_label2 = tk.Label(p_frame1, text=pol_kontr[1], width=5, font=('Times New Roman', 15), foreground="Black")
+p_pol_label3 = tk.Label(p_frame1, text=pol_kontr[2], width=5, font=('Times New Roman', 15), foreground="Black")
+
+polarizacio_but1 = tk.Button(p_frame1, width=5, text="Beállít", background=action_color, foreground=fg_color,command=lambda: threading.Thread(target=polarizacio_kontroller_beallitas).start(),
+                              cursor="hand2")
+
+p_label1.grid(row=0, column=0, columnspan=3, sticky="news")
+p_pol_label1.grid(row=1,column=0,sticky="news", padx=100)
+p_pol_label2.grid(row=1,column=1,sticky="news", padx=100)
+p_pol_label3.grid(row=1,column=2,sticky="news", padx=100)
+
+polarizacio_but1.grid(row=2,column=0,columnspan=3,sticky="news")
+
+#----------------------------------------
+
+
 
 notebook.grid(row=0, column=0, sticky="news")
 plot_frame.grid(row=0, column=1, sticky="news")

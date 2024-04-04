@@ -6,10 +6,10 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.append("C:\\Users\\KNL2022\\Documents\\Entangled souurce")
-from utils.common import connect, adjust_bin_width
-from utils.acquisitions import acquire_histograms, save_histograms
-from utils.plot import plot_histograms, filter_histogram_bins
+# sys.path.append("C:\\Users\\KNL2022\\Documents\\Entangled souurce")
+# from utils.common import connect, adjust_bin_width
+# from utils.acquisitions import acquire_histograms, save_histograms
+# from utils.plot import plot_histograms, filter_histogram_bins
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,7 @@ DEFAULT_LOG_PATH = None
 
 def time_controller_csatlakozas():
     try:
+      
         tc = connect(DEFAULT_TC_ADDRESS)
         bin_width = adjust_bin_width(tc, DEFAULT_BIN_WIDTH)
     except AssertionError as e:

@@ -4,15 +4,15 @@ import time
 import clr
 
 
-clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.DeviceManagerCLI.dll")
-clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.GenericMotorCLI.dll")
-clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.IntegratedStepperMotorsCLI.dll")
+# clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.DeviceManagerCLI.dll")
+# clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.GenericMotorCLI.dll")
+# clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.IntegratedStepperMotorsCLI.dll")
 
 
-from Thorlabs.MotionControl.DeviceManagerCLI import *
-from Thorlabs.MotionControl.GenericMotorCLI import *
-from Thorlabs.MotionControl.IntegratedStepperMotorsCLI import *
-from System import Decimal
+# from Thorlabs.MotionControl.DeviceManagerCLI import *
+# from Thorlabs.MotionControl.GenericMotorCLI import *
+# from Thorlabs.MotionControl.IntegratedStepperMotorsCLI import *
+# from System import Decimal
 
 
 def forgato_csatlakozas(serial_n1,serial_n2):
@@ -83,20 +83,20 @@ def forgato_csatlakozas(serial_n1,serial_n2):
         print(e)
 
 def move_forgato(device,fok):
-    d = Decimal(fok)
+    #d = Decimal(fok)
     print(f'Moving to position {fok}')
-    device.MoveTo(d, 60000)  # 10s timeout again
+    #device.MoveTo(d, 60000)  # 10s timeout again
     time.sleep(1)
     return
 
 def home_forgato(device):
     print("Home")
-    device.Home(60000)  # 10s timeout, blocking call
+    #device.Home(60000)  # 10s timeout, blocking call
     return
 
 def forgato_disconnect(device_1,device_2):
-    device_1.Disconnect()
-    device_2.Disconnect()
+    #device_1.Disconnect()
+    #device_2.Disconnect()
     print("Devices disconnected")
     return
 

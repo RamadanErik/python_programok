@@ -9,6 +9,7 @@ import threading
 
 from forgato import *
 from time_controller import *
+from fuggvenyek import kontrollerhez_csatlakozas,kereso_algoritmus_sima
 
 
 # time_controller csatlakozás
@@ -19,7 +20,7 @@ tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRA
 s_no1 = "55290504"
 s_no2 = "55290814"
 device_1 = forgato_csatlakozas(s_no1, s_no2)
-device_2 = forgato_csatlakozas(s_no2, s_no1)
+#evice_2 = forgato_csatlakozas(s_no2, s_no1)
 
 
 
@@ -62,7 +63,7 @@ class PlotUpdater:
         self.plot_2_3 = tk.BooleanVar()
         self.plot_2_4 = tk.BooleanVar()
         self.thread = None
-        #global device_1
+        global device_1
         #global device_2
 
     def destroy(self):
@@ -130,7 +131,7 @@ class PlotUpdater:
                     beutes_label4.config(text=utolso[3])
 
             self.ax.legend(loc='upper left')
-            self.ax.set_ylim([0, 18000])
+            self.ax.set_ylim([0, 8000])
             self.ax.set_title('Koincidencia mérés')
             self.ax.set_xlabel('Adat')
             self.ax.set_ylabel('Beütések')
@@ -139,6 +140,7 @@ class PlotUpdater:
             self.ax.grid(color=highlight_color)
             # Draw the updated plot
             self.canvas.draw()
+
 
             self.window.after(100, self.update_plot)
 
@@ -351,8 +353,10 @@ def set_korbe_forgatas1():
         forgato_forgatas1.config(text="Forgatás")
     while forgatas1:
         set_forgato1()
-        time.sleep(1)
-        szog1+=10
+        time.sleep(2)
+        szog1+=5
+        if szog1>360:
+            szog1=0
 
 def set_korbe_forgatas2():
     global szog2
@@ -366,6 +370,8 @@ def set_korbe_forgatas2():
         set_forgato2()
         time.sleep(1)
         szog2+=10
+        if szog2>360:
+            szog2=0
 
 
 minimalizalando_value = tk.IntVar()  # Változó a kiválasztott minimalizálandó érték tárolására
@@ -387,11 +393,11 @@ def minimum_kereses_forgato1():
 
     forgato_minimalizalasa1.config(text="...")
     fokonkent=5
-    k=int(180/fokonkent)    
+    k=int(90/fokonkent)
     for i in range(k):
         szog1+=fokonkent
         set_forgato1()
-        time.sleep(1)
+        time.sleep(2)
         beutes = utolso[min_val-1]
         if( beutes < minbeut ):
             minszog=szog1
@@ -423,7 +429,7 @@ def minimum_kereses_forgato2():
     for i in range(k):
         szog2+=fokonkent
         set_forgato2()
-        time.sleep(1)
+        time.sleep(2)
         beutes = utolso[min_val-1]
         if( beutes < minbeut ):
             minszog=szog2
@@ -513,14 +519,35 @@ minimalizalando_value.set(1)  # Alapértelmezettként a 1-es minimalizálandó v
 
 
 #------------------------------------------
+p_gomb_szoveg="Beállít"
+p_csatlakozva=False
 
 # Polarizáció kontroller tab -->
+try:
+    device, paddle11, paddle22, paddle33 = kontrollerhez_csatlakozas()
+    p_csatlakozva=True
+except:
+    p_gomb_szoveg = "Nem sikerült csatlakozni"
+    print("Nem sikerült csatlakozni a polarizáció konrtollerhez")
+pol_kontr=[0,0,0]
+
+
+
 
 def polarizacio_kontroller_beallitas():
+    global p_csatlakozva
+    if p_csatlakozva:
+        global device
+        global pol_kontr
+        fokok, adatok3, optimum = kereso_algoritmus_sima(device, tc, 3, 10)
+        pol_kontr=optimum
+        p_pol_label1.config(text=pol_kontr[0])
+        p_pol_label2.config(text=pol_kontr[1])
+        p_pol_label3.config(text=pol_kontr[2])
     return
 
 
-pol_kontr=[0,0,0]
+
 
 p_frame1 = tk.Frame(tab2, relief=tk.GROOVE, bd=2, width=600)
 
@@ -531,13 +558,13 @@ p_pol_label1 = tk.Label(p_frame1, text=pol_kontr[0], width=5, font=('Times New R
 p_pol_label2 = tk.Label(p_frame1, text=pol_kontr[1], width=5, font=('Times New Roman', 15), foreground="Black")
 p_pol_label3 = tk.Label(p_frame1, text=pol_kontr[2], width=5, font=('Times New Roman', 15), foreground="Black")
 
-polarizacio_but1 = tk.Button(p_frame1, width=5, text="Beállít", background=action_color, foreground=fg_color,command=lambda: threading.Thread(target=polarizacio_kontroller_beallitas).start(),
+polarizacio_but1 = tk.Button(p_frame1, width=5, height=3, text=p_gomb_szoveg, background=action_color, foreground=fg_color,command=lambda: threading.Thread(target=polarizacio_kontroller_beallitas).start(),
                               cursor="hand2")
 
 p_label1.grid(row=0, column=0, columnspan=3, sticky="news")
-p_pol_label1.grid(row=1,column=0,sticky="news", padx=100)
-p_pol_label2.grid(row=1,column=1,sticky="news", padx=100)
-p_pol_label3.grid(row=1,column=2,sticky="news", padx=100)
+p_pol_label1.grid(row=1,column=0,sticky="news", padx=40)
+p_pol_label2.grid(row=1,column=1,sticky="news", padx=40)
+p_pol_label3.grid(row=1,column=2,sticky="news", padx=40)
 
 polarizacio_but1.grid(row=2,column=0,columnspan=3,sticky="news")
 

@@ -6,10 +6,10 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-# sys.path.append("C:\\Users\\KNL2022\\Documents\\Entangled souurce")
-# from utils.common import connect, adjust_bin_width
-# from utils.acquisitions import acquire_histograms, save_histograms
-# from utils.plot import plot_histograms, filter_histogram_bins
+sys.path.append("C:\\Users\\KNL2022\\Documents\\Entangled souurce")
+from utils.common import connect, adjust_bin_width
+from utils.acquisitions import acquire_histograms, save_histograms
+from utils.plot import plot_histograms, filter_histogram_bins
 
 
 logger = logging.getLogger(__name__)
@@ -53,3 +53,5 @@ def time_controller_csatlakozas():
         logger.exception(e)
         sys.exit(1)
     return [tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRAMS]
+
+

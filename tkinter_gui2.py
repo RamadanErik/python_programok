@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import re
 import threading
+import scipy.optimize
 
 from forgato import *
 from time_controller import *
@@ -19,8 +20,8 @@ tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRA
 # forgato csatlakozas
 s_no1 = "55290504"
 s_no2 = "55290814"
-device_1 = forgato_csatlakozas(s_no1, s_no2)
-#evice_2 = forgato_csatlakozas(s_no2, s_no1)
+device_1, device_2 = forgato_csatlakozas(s_no1, s_no2)
+
 
 
 
@@ -64,7 +65,7 @@ class PlotUpdater:
         self.plot_2_4 = tk.BooleanVar()
         self.thread = None
         global device_1
-        #global device_2
+        global device_2
 
     def destroy(self):
         if self.thread is not None:
@@ -73,11 +74,12 @@ class PlotUpdater:
                 self.thread.join()
 
     def generate(self):
-
+        global check
         # Ha van tc
         histograms = acquire_histograms(
             tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRAMS
         )
+
         # ----------
 
         # Ha nincs tc
@@ -368,13 +370,30 @@ def set_korbe_forgatas2():
         forgato_forgatas2.config(text="Forgatás")
     while forgatas2:
         set_forgato2()
-        time.sleep(1)
-        szog2+=10
+        time.sleep(2)
+        szog2+=5
         if szog2>360:
             szog2=0
 
 
 minimalizalando_value = tk.IntVar()  # Változó a kiválasztott minimalizálandó érték tárolására
+
+
+def fit_sin(tt, yy):
+    tt = np.array(tt)
+    yy = np.array(yy)
+    ff = np.fft.fftfreq(len(tt), (tt[1]-tt[0]))   # assume uniform spacing
+    Fyy = abs(np.fft.fft(yy))
+    guess_freq = abs(ff[np.argmax(Fyy[1:])+1])   # excluding the zero frequency "peak", which is related to offset
+    guess_amp = np.std(yy) * 2.**0.5
+    guess_offset = np.mean(yy)
+    guess = np.array([guess_amp, 2.*np.pi*guess_freq, 0., guess_offset])
+    def sinfunc(t, A, w, p, c):  return A * np.sin(w*t + p) + c
+    popt, pcov = scipy.optimize.curve_fit(sinfunc, tt, yy, p0=guess)
+    A, w, p, c = popt
+    f = w/(2.*np.pi)
+    fitfunc = lambda t: A * np.sin(w*t + p) + c
+    return {"amp": A, "omega": w, "phase": p, "offset": c, "freq": f, "period": 1./f, "fitfunc": fitfunc, "maxcov": np.max(pcov), "rawres": (guess,popt,pcov)}
 
     
 def minimum_kereses_forgato1():
@@ -384,26 +403,33 @@ def minimum_kereses_forgato1():
     global minimalizalando_value
     global minimalizalas
 
-
-
     min_val=minimalizalando_value.get()
     minimalizalas = True
     minszog=szog1
     minbeut=utolso[min_val-1]
+
+    szogek=[]
+    beutesek=[]
 
     forgato_minimalizalasa1.config(text="...")
     fokonkent=5
     k=int(90/fokonkent)
     for i in range(k):
         szog1+=fokonkent
+        szogek.append(szog1)
         set_forgato1()
-        time.sleep(2)
+        time.sleep(3)
+
         beutes = utolso[min_val-1]
+        beutesek.append(beutes)
         if( beutes < minbeut ):
             minszog=szog1
             minbeut=beutes
-    
-    szog1=minszog
+
+    # szin = fit_sin(szogek,beutes)
+    # minszog = 90 * 3/4 - szin["phase"]/szin["omega"]
+
+    szog1 = minszog
     set_forgato1()
     time.sleep(1)
     forgato_minimalizalasa1.config(text="Beállítás 1.")
@@ -425,22 +451,66 @@ def minimum_kereses_forgato2():
 
     forgato_minimalizalasa2.config(text="...")
     fokonkent=5
-    k=int(180/fokonkent)    
+    k=int(90/fokonkent)
     for i in range(k):
         szog2+=fokonkent
         set_forgato2()
-        time.sleep(2)
+        time.sleep(3)
         beutes = utolso[min_val-1]
         if( beutes < minbeut ):
             minszog=szog2
             minbeut=beutes
     
-    szog2=minszog
+    szog2 = minszog
     set_forgato2()
     time.sleep(1)
     forgato_minimalizalasa2.config(text="Beállítás 2.")
     minimalizalas = False
 
+def kompatibilis_szogekke(a):
+    for i in range(len(a)):
+        if a[i]>360:
+            a[i]-=360
+    return a
+
+def E_szamolas():
+    global utolso
+    N1,N2,N3,N4 = utolso
+    E = (N1-N2-N3+N4) / (N1+N2+N3+N4)
+    return E
+def bell_test():
+    global szog1,szog2
+
+    #minimum_kereses_forgato1()
+
+    #Bázis meghatározása
+    bazis=[szog1,szog2]
+
+    #Mérés szögei
+    a = bazis[0]
+    a2 = bazis[0]+45
+    b = bazis[0]+22.5
+    b2 = bazis[0]+67.5
+    a, a2, b, b2 = kompatibilis_szogekke([a, a2, b, b2])
+
+    meresek=[[a, b], [a, b2], [a2, b2], [a2, b]]
+
+    eredmenyek=[]
+
+    for x in meresek:
+        szog1 = x[0]
+        szog2 = x[1]
+        print(f"Egyes beállítása {szog1}")
+        print(f"Kettes beállítása {szog2}")
+        set_forgato1()
+        set_forgato2()
+        time.sleep(10)
+        eredmenyek.append(E_szamolas())
+
+    E_ab, E_ab2, E_a2b2, E_a2b = eredmenyek
+    print(f"E_ab = {E_ab} \n E_ab' = {E_ab2} \n E_a'b' = {E_a2b2} \n E_a'b = {E_a2b} \n")
+    S = E_ab - E_ab2 + E_a2b2 + E_a2b
+    print(f"Bell mérés vége: S = {S}")
 
 
 
@@ -493,6 +563,13 @@ rb_2 = tk.Radiobutton(frame4, text='2', variable=minimalizalando_value, value=2,
 rb_3 = tk.Radiobutton(frame4, text='3', variable=minimalizalando_value, value=3, font=('Times New Roman', 15), cursor="hand2")
 rb_4 = tk.Radiobutton(frame4, text='4', variable=minimalizalando_value, value=4, font=('Times New Roman', 15), cursor="hand2")
 
+rb_label1_dot = tk.Label(frame4, text="●", width=5, font=('Times New Roman', 15), foreground=kek)
+rb_label2_dot = tk.Label(frame4, text="●", width=5, font=('Times New Roman', 15), foreground=zold)
+rb_label3_dot = tk.Label(frame4, text="●", width=5, font=('Times New Roman', 15), foreground=piros)
+rb_label4_dot = tk.Label(frame4, text="●", width=5, font=('Times New Roman', 15), foreground=sarga)
+
+
+
 label4 = tk.Label(frame4, text="Minimumba beállítás:", width=20, font=('Times New Roman', 15, 'bold'), foreground="Black")
 
 forgato_minimalizalasa1 = tk.Button(frame4, width=5, text="Beállítás 1.", background=action_color, foreground=fg_color,command=lambda: threading.Thread(target=minimum_kereses_forgato1).start(),
@@ -500,16 +577,27 @@ forgato_minimalizalasa1 = tk.Button(frame4, width=5, text="Beállítás 1.", bac
 forgato_minimalizalasa2 = tk.Button(frame4, width=5, text="Beállítás 2.", background=action_color, foreground=fg_color,command=lambda: threading.Thread(target=minimum_kereses_forgato2).start(),
                               cursor="hand2")
 
+bell_test_button = tk.Button(frame4, width=5, text="Bell mérés", background=action_color, foreground=fg_color,command=lambda: threading.Thread(target=bell_test()).start(),
+                              cursor="hand2")
 
-label4.grid(rowspan=2, column=0, sticky="news")
+label4.grid(rowspan=4, column=0, sticky="news")
 # Rádiógombok elhelyezése a frame-en
 rb_1.grid(row=0, column=1)
 rb_2.grid(row=0, column=2)
 rb_3.grid(row=0, column=3)
 rb_4.grid(row=0, column=4)
 
+rb_label1_dot.grid(row=1, column=1)
+rb_label2_dot.grid(row=1, column=2)
+rb_label3_dot.grid(row=1, column=3)
+rb_label4_dot.grid(row=1, column=4)
+
+
+
 forgato_minimalizalasa1.grid(row=2, column=1, columnspan=2, sticky="news")
 forgato_minimalizalasa2.grid(row=2, column=3, columnspan=2, sticky="news")
+
+bell_test_button.grid(row=3, column=1, columnspan=4, sticky="news")
 
 
 # Alapértelmezett érték beállítása

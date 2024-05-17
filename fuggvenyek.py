@@ -167,6 +167,38 @@ def optimum_kereso(device,tc,paddle,min,max,db):
 
     return [probalk,adatok,opt]
 
+def optimum_kereso2(device,tc,paddle,min,max,db,melyikre_opt):
+    adatok=[]
+
+    probalk=[]
+    adat_elso=0
+    maxérték = 0
+    opt=0
+
+    for i in np.linspace(min, max, db):
+        d = Decimal(i)
+        device.MoveTo(d, paddle, 60000)
+        lista=[]
+        for j in range(1,5):
+            adat2 = zmq_exec(tc, f"INPUt{j}:COUNter?")
+            adat = int(adat2)
+            if(j==melyikre_opt+1):
+                adat_elso=adat
+            lista.append(adat)
+        adatok.append(lista)
+        probalk.append(i)
+        print(f"Fok:{round(i,2)} Mérés:{lista[0]}")
+        time.sleep(0.2)
+        if adat_elso > maxérték:
+            maxérték = adat_elso
+            opt = i
+
+    d = Decimal(opt)
+    device.MoveTo(d, paddle, 60000)
+    print(f'OPTIMUM: {round(opt,2)}')
+
+    return [probalk,adatok,opt]
+
 
 def beallit3(device,paddles,poz):
     d = Decimal(int(poz[0]))
@@ -301,6 +333,41 @@ def kontrollerhez_csatlakozas():
         #sys.exit(1)
     return device, paddle11, paddle22, paddle33
 
+def kontrollerhez_csatlakozas2(serial_no):
+    try:
+        serial_no = str(serial_no)
+        DeviceManagerCLI.BuildDeviceList()
+        device = Polarizer.CreatePolarizer(serial_no)
+        print(DeviceManagerCLI.GetDeviceList())
+
+        # Connect, begin polling, and enable
+        print("Connecting to MPC320")
+        device.Connect(serial_no)
+
+        time.sleep(0.25)
+        device.StartPolling(250)
+        time.sleep(0.25)  # wait statements are important to allow settings to be sent to the device
+
+        device.EnableDevice()
+        time.sleep(0.25)  # Wait for device to enable
+
+        # Get Device information
+        device_info = device.GetDeviceInfo()
+        print(device_info.Description)
+
+        paddle11 = PolarizerPaddles.Paddle1
+        paddle22 = PolarizerPaddles.Paddle2
+        paddle33 = PolarizerPaddles.Paddle3
+
+        # Wait for Settings to Initialise
+        if not device.IsSettingsInitialized():
+            device.WaitForSettingsInitialized(10000)  # 10 second timeout
+            assert device.IsSettingsInitialized() is True
+    except Exception as e:
+        print(e)
+        #sys.exit(1)
+    return device, paddle11, paddle22, paddle33
+
 def time_controller_csatlakozas():
     try:
         # Default Time Controller IP address
@@ -397,9 +464,9 @@ def kereso_algoritmus_sima(device,tc,iteraciok_szama,db):
     max = [170, 170, 170]
 
     # 'töröld kell hozzá opt input'
-    for i in range(3):
-        min[i] = uj_min(opt[i], 20)
-        max[i] = uj_max(opt[i], 20)
+    # for i in range(3):
+    #     min[i] = uj_min(opt[i], 20)
+    #     max[i] = uj_max(opt[i], 20)
     '  '
     fokok_ki=[]
     adatok_ki=[]
@@ -441,6 +508,52 @@ def kereso_algoritmus_sima(device,tc,iteraciok_szama,db):
             plt.savefig(fig_name)
             plt.draw()
             plt.close(fig)
+
+        for i in range(3):
+            min[i] = uj_min(optimum[i], 20/(j+1))
+            max[i] = uj_max(optimum[i], 20/(j+1))
+    return fokok_ki,adatok_ki,optimum
+
+def kereso_algoritmus_sima2(device,tc,iteraciok_szama,db,melyikre_opt):
+    optimum = [0, 0, 0]
+    paddle1 = PolarizerPaddles.Paddle1
+    paddle2 = PolarizerPaddles.Paddle2
+    paddle3 = PolarizerPaddles.Paddle3
+    min = [0, 0, 0]
+    max = [170, 170, 170]
+
+    # 'töröld kell hozzá opt input'
+    # for i in range(3):
+    #     min[i] = uj_min(opt[i], 20)
+    #     max[i] = uj_max(opt[i], 20)
+    '  '
+    fokok_ki=[]
+    adatok_ki=[]
+
+    # Create a new directory with the current timestamp
+    current_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    directory_path = f"C:/Users/KNL2022/PycharmProjects/Poincare/képek/figures_{current_time}"
+    os.makedirs(directory_path)
+
+    for j in range(iteraciok_szama):
+        fokok_ki.append([[],[],[]])
+    for j in range(iteraciok_szama):
+        fokok = []
+        adatok2 = []
+        probalk, adatok, optimum[0] = optimum_kereso2(device, tc, paddle1, min[0], max[0], db, melyikre_opt)
+        fokok.append(probalk)
+        fokok_ki[j][0].append(probalk)
+        adatok2.append(adatok)
+        probalk, adatok, optimum[1] = optimum_kereso2(device, tc, paddle2, min[1], max[1], db, melyikre_opt)
+        fokok.append(probalk)
+        fokok_ki[j][1].append(probalk)
+        adatok2.append(adatok)
+        probalk, adatok, optimum[2] = optimum_kereso2(device, tc, paddle3, min[2], max[2], db, melyikre_opt)
+        fokok.append(probalk)
+        fokok_ki[j][2].append(probalk)
+        adatok2.append(adatok)
+        adatok3 = np.array(adatok2)
+        adatok_ki.append(adatok3)
 
         for i in range(3):
             min[i] = uj_min(optimum[i], 20/(j+1))

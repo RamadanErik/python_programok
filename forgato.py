@@ -86,7 +86,7 @@ def move_forgato(device,fok):
     d = Decimal(fok)
     print(f'Moving to position {fok}')
     device.MoveTo(d, 60000)  # 10s timeout again
-    time.sleep(1)
+    time.sleep(10)
     return
 
 def home_forgato(device):

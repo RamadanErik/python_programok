@@ -10,7 +10,7 @@ import scipy.optimize
 
 from forgato import *
 from time_controller import *
-from fuggvenyek import kontrollerhez_csatlakozas2,kereso_algoritmus_sima2
+from fuggvenyek import kontrollerhez_csatlakozas2,kereso_algoritmus_sima3
 
 
 # time_controller csatlakozás
@@ -47,6 +47,32 @@ plot_histogram = False
 
 bin_width=adjust_bin_width(tc,bin_width)
 
+
+
+histograms=[]
+beutesek=np.zeros((4,20))
+utolso=[0,0,0,0]
+
+adat_lekeres=True
+def generate_adatok_ha_nincs_tc():
+    global histograms
+    # Ha nincs tc
+    a1 = np.random.randint(2000, size=10)
+    a2 = np.random.randint(2000, size=10)
+    a3 = np.random.randint(2000, size=10)
+    a4 = np.random.randint(2000, size=10)
+
+    histograms = {
+        1: a1,
+        2: a2,
+        3: a3,
+        4: a4
+    }
+    # -----------
+    return
+
+
+
 class PlotUpdater:
     def __init__(self, window, fig, ax, canvas):
         self.window = window
@@ -60,8 +86,15 @@ class PlotUpdater:
         self.plot_2_4 = tk.BooleanVar(value=True)
         self.lenormalt = tk.BooleanVar(value = False)
         self.thread = None
+
+
         global device_1
         global device_2
+
+        global histograms
+        global beutesek
+        global utolso
+
 
     def destroy(self):
         if self.thread is not None:
@@ -69,55 +102,34 @@ class PlotUpdater:
                 self.continue_update = False
                 self.thread.join()
 
-    def generate(self):
-        # Ha van tc
+    def adatok(self):
+
         histograms = acquire_histograms(
             tc, DEFAULT_ACQUISITION_DURATION, bin_width, DEFAULT_BIN_COUNT, DEFAULT_HISTOGRAMS
         )
 
-        # ----------
-
-        # Ha nincs tc
-        # a1 = np.random.randint(2000, size=10)
-        # a2 = np.random.randint(2000, size=10)
-        # a3 = np.random.randint(2000, size=10)
-        # a4 = np.random.randint(2000, size=10)
-        
-        # histograms = {
-        #     1: a1,
-        #     2: a2,
-        #     3: a3,
-        #     4: a4
-        # }
-        # -----------
-        return histograms
-
-    def adatok(self):
-        histograms = self.generate()
-
         for i, (hist_title, histogram) in enumerate(histograms.items()):
             beutesek[i, 0:19] = beutesek[i, 1:20]
             beutesek[i, 19] = np.sum(histogram)
-        return beutesek
 
-    def utolso_beutes(self, beutesek):
-        global utolso
         for i in range(4):
             utolso[i] = int(beutesek[i][19])
+
         return
 
     def update_plot(self):
         if self.continue_update:
+
             if not plot_histogram:
-                beutesek = self.adatok()
-                self.utolso_beutes(beutesek)
                 # Clear the previous plot
                 self.ax.clear()
-                adat_ki = beutesek
+                adat_ki = beutesek.tolist()
+
+
                 ylim=12000
                 E_ki=0
                 if self.lenormalt.get():
-                    adat_ki_raw = np.array(beutesek)
+                    adat_ki_raw = beutesek
                     oszlop_osszeg = np.sum(adat_ki_raw, axis=0)
                     adat_ki1 = np.round(adat_ki_raw / oszlop_osszeg,4)
                     adat_ki1 = np.nan_to_num(adat_ki1, nan=0)
@@ -158,7 +170,6 @@ class PlotUpdater:
 
             else:
                 self.ax.clear()
-                histograms = self.generate()
 
                 max_bin_count = max(len(histogram) for histogram in histograms.values())
 
@@ -187,10 +198,11 @@ class PlotUpdater:
             # Draw the updated plot
             self.canvas.draw()
 
-            self.window.after(100, self.update_plot)
+            self.window.after(100, self.update_plot_thread_func())
 
     def update_plot_thread_func(self):
         while self.continue_update:
+            self.adatok()
             self.update_plot()
 
     def start_plot(self):
@@ -293,9 +305,9 @@ frame4.grid(row=3, column=0, sticky="nws", pady=5)
 def plotvaltas():
     global plot_histogram
     if plot_histogram:
-        plot_histogram=False
+        plot_histogram = False
     else:
-        plot_histogram=True
+        plot_histogram = True
     return
 
 # Frame2--------
@@ -647,14 +659,30 @@ for i in range(4):
 
 
 
+def uj_min(a,mennyivel):
+    c=a-mennyivel
+    if(c<0):
+        c=0
+    return c
+
+def uj_max(a,mennyivel):
+    c=a+mennyivel
+    if(c>170):
+        c=170
+    return c
+
+
+
+
 
 def polarizacio_kontroller_beallitas(i):
     global p_csatlakozva
+    global utolso
     if p_csatlakozva[i]:
         global pol_devices
         global pol_kontr
         global  pol_labels
-        fokok, adatok3, optimum = kereso_algoritmus_sima2(pol_devices[i], tc, 3, 10,i)
+        fokok, adatok3, optimum = kereso_algoritmus_sima3(pol_devices[i], tc, 3, 10,i,utolso)
         pol_kontr[i]=optimum
         pol_labels[i][0].config(text=round(pol_kontr[i][0],2))
         pol_labels[i][1].config(text=round(pol_kontr[i][1],2))

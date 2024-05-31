@@ -560,6 +560,70 @@ def kereso_algoritmus_sima2(device,tc,iteraciok_szama,db,melyikre_opt):
             max[i] = uj_max(optimum[i], 20/(j+1))
     return fokok_ki,adatok_ki,optimum
 
+def optimum_kereso3(device,tc,paddle,min,max,db,melyikre_opt,utolso): #EZ MÉG ITT NEM JÓ rosszra optimalizál sztem, beütés kéne nem koincidencia
+
+
+    adatok=[]
+
+    probalk=[]
+    adat=0
+    maxérték = 0
+    opt=0
+
+    for i in np.linspace(min, max, db):
+        d = Decimal(i)
+        device.MoveTo(d, paddle, 60000)
+        lista=[]
+        adat = utolso[melyikre_opt]
+        print(f"Fok:{round(i,2)} Mérés:{adat}")
+        time.sleep(0.2)
+        if adat > maxérték:
+            maxérték = adat
+            opt = i
+
+    d = Decimal(opt)
+    device.MoveTo(d, paddle, 60000)
+    print(f'OPTIMUM: {round(opt,2)}')
+
+    return [probalk,adatok,opt]
+def kereso_algoritmus_sima3(device,tc,iteraciok_szama,db,melyikre_opt,utolso):
+
+    optimum = [0, 0, 0]
+    paddle1 = PolarizerPaddles.Paddle1
+    paddle2 = PolarizerPaddles.Paddle2
+    paddle3 = PolarizerPaddles.Paddle3
+    min = [0, 0, 0]
+    max = [170, 170, 170]
+
+    fokok_ki=[]
+    adatok_ki=[]
+
+    for j in range(iteraciok_szama):
+        fokok_ki.append([[],[],[]])
+    for j in range(iteraciok_szama):
+        fokok = []
+        adatok2 = []
+        probalk, adatok, optimum[0] = optimum_kereso3(device, tc, paddle1, min[0], max[0], db, melyikre_opt,utolso)
+        fokok.append(probalk)
+        fokok_ki[j][0].append(probalk)
+        adatok2.append(adatok)
+        probalk, adatok, optimum[1] = optimum_kereso3(device, tc, paddle2, min[1], max[1], db, melyikre_opt,utolso)
+        fokok.append(probalk)
+        fokok_ki[j][1].append(probalk)
+        adatok2.append(adatok)
+        probalk, adatok, optimum[2] = optimum_kereso3(device, tc, paddle3, min[2], max[2], db, melyikre_opt,utolso)
+        fokok.append(probalk)
+        fokok_ki[j][2].append(probalk)
+        adatok2.append(adatok)
+        adatok3 = np.array(adatok2)
+        adatok_ki.append(adatok3)
+
+        for i in range(3):
+            min[i] = uj_min(optimum[i], 20/(j+1))
+            max[i] = uj_max(optimum[i], 20/(j+1))
+    return fokok_ki,adatok_ki,optimum
+
+
 def kereso_algoritmus_random(device,tc,hatar,probalkozasi_limit,paddle1,paddle2,paddle3):
     beallitott_fokok = []  # új
     kapcs = -1
